@@ -217,6 +217,7 @@ func (c *Fnn) setProductionLimit(percent int) error {
 	limit := 0.0
 	if active {
 		limit = float64(percent) / 100 * c.productionNominalMax
+		c.log.DEBUG.Printf("setProductionLimit to %d%%, %.0fW", percent, limit)
 	}
 
 	if err := smartgrid.UpdateSession(&c.smartgridProductionID, smartgrid.Curtail, c.site.GetGridPower(), limit, active); err != nil {
@@ -235,6 +236,7 @@ func (c *Fnn) setConsumptionLimit(limit float64) error {
 	c.consumptionLimit = nil
 	if active {
 		c.consumptionLimit = &limit
+		c.log.DEBUG.Printf("setConsumptionLimit to %.0fW", limit)
 	}
 
 	if err := smartgrid.UpdateSession(&c.smartgridConsumptionID, smartgrid.Dim, c.site.GetGridPower(), limit, active); err != nil {
