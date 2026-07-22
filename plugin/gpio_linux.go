@@ -56,7 +56,7 @@ func acquireLine(chip string, pin int, output bool) (*sharedLine, error) {
 	if output {
 		opts = append(opts, gpiocdev.AsOutput(0))
 	} else {
-		opts = append(opts, gpiocdev.AsInput, gpiocdev.WithPullUp)
+		opts = append(opts, gpiocdev.AsInput, gpiocdev.WithPullUp, gpiocdev.AsActiveLow)
 	}
 
 	line, err := gpiocdev.RequestLine(chip, pin, opts...)
