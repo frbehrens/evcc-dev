@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"math"
+	"os"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -137,12 +140,14 @@ func (c *Fnn) SetUpdated(f func()) {
 // Run starts the FNN control loop. NewFnn already ran the first pass.
 func (c *Fnn) Run() {
 	for range time.Tick(c.interval) {
-		if err := c.runCurtail(); err != nil {
-			c.log.ERROR.Println(err)
-		}
+		if !processStateFile_debug(c) {
+			if err := c.runCurtail(); err != nil {
+				c.log.ERROR.Println(err)
+			}
 
-		if err := c.runDim(); err != nil {
-			c.log.ERROR.Println(err)
+			if err := c.runDim(); err != nil {
+				c.log.ERROR.Println(err)
+			}
 		}
 
 		if c.publishFunc != nil {
@@ -287,4 +292,23 @@ func (c *Fnn) MaxProductionPower() *float64 {
 	}
 
 	return new(float64(c.productionPercent) / 100 * c.productionNominalMax)
+}
+
+// reads external file fnndbg.dat to set the production limit for debugging purposes. If the file is empty, it sets the consumption limit to maxDimPower. If the file contains a number, it sets the production limit to that number.
+// returns true if the file was read, false if the file does not exist or could not be read.
+func processStateFile_debug(fnn *Fnn) bool {
+
+	content, err := os.ReadFile("fnndbg.dat")
+	if err != nil {
+		return false
+	}
+	str := strings.TrimSpace(string(content))
+	if str == "" {
+		fnn.setConsumptionLimit(fnn.maxDimPower)
+	} else {
+		if val, err := strconv.Atoi(str); err == nil {
+			fnn.setProductionLimit(val)
+		}
+	}
+	return true
 }
