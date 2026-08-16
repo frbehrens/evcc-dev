@@ -188,7 +188,16 @@ func (lp *Loadpoint) effectiveMinCurrent() float64 {
 
 // effectiveMaxCurrent returns the effective max current
 func (lp *Loadpoint) effectiveMaxCurrent() float64 {
+	return lp.effectiveMaxCurrent2(true)
+}
+
+// effectiveMaxCurrent returns the effective max current
+func (lp *Loadpoint) effectiveMaxCurrent2(useVehicleLimitOn1p bool) float64 {
 	maxCurrent := lp.getMaxCurrent()
+
+	if useVehicleLimitOn1p && lp.GetPhasesConfigured() == 0 && lp.GetPhases() == 1 {
+		maxCurrent = 32.0 // ignore loadpoint setting during 1p charging
+	}
 
 	if v := lp.GetVehicle(); v != nil {
 		if res, ok := v.OnIdentified().GetMaxCurrent(); ok && res > 0 {
@@ -287,7 +296,7 @@ func (lp *Loadpoint) EffectiveMaxPower() float64 {
 
 // effectiveMaxPower returns the effective max power taking vehicle capabilities and phase scaling into account
 func (lp *Loadpoint) effectiveMaxPower() float64 {
-	res := Voltage * lp.effectiveMaxCurrent() * float64(lp.maxActivePhases())
+	res := Voltage * lp.effectiveMaxCurrent2(false) * float64(lp.maxActivePhases())
 	if lp.vehicle != nil {
 		if maxPower, ok := lp.vehicle.OnIdentified().GetMaxPower(); ok {
 			return min(maxPower, res)
