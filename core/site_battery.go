@@ -123,7 +123,7 @@ func (site *Site) requiredBatteryMode(batteryGridChargeActive, batteryGridDischa
 			site.log.WARN.Println("battery mode: grid charge and grid discharge both active, charge takes priority")
 		}
 		res = keepUnlessModified(api.BatteryCharge)
-	case site.dischargeControlActive(rate) || (batteryGridDischargeActive && site.evFastChargingActive()):
+	case site.dischargeControlActive(rate) || (batteryGridDischargeActive && site.evFastChargingActive()) || site.controlDischargeByBatteryMinSoc():
 		// hold wins over feed-in discharge; fast charging holds even without
 		// batteryDischargeControl, selling while an EV fast-charges is worse
 		res = keepUnlessModified(api.BatteryHold)
@@ -287,6 +287,35 @@ func (site *Site) dischargeControlActive(rate api.Rate) bool {
 func (site *Site) evFastChargingActive() bool {
 	for _, lp := range site.activeLoadpoints() {
 		if lp.GetStatus() == api.StatusC && lp.IsFastChargingActive() {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (site *Site) controlDischargeByBatteryMinSoc() bool {
+
+	fastLoadpointCharging := false
+	for _, lp := range site.activeLoadpoints() {
+		if lp.IsFastChargingActive() && /* soc by car may be reached */ lp.GetChargePower() > 500 {
+			fastLoadpointCharging = true
+			break
+		}
+	}
+	if !fastLoadpointCharging {
+		site.log.TRACE.Println("battery mode: no fast loadpoint charging")
+		return false
+	}
+
+	for _, dev := range site.batteryMeters {
+		// validate min soc
+		minSoc, err := site.batterySocLimitReached(dev, true)
+		if err != nil && !errors.Is(err, api.ErrNotAvailable) {
+			continue
+		}
+		if minSoc {
+			site.log.DEBUG.Printf("battery %s: soc below min soc, disable discharge", deviceTitleOrName(dev))
 			return true
 		}
 	}

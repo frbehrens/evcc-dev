@@ -1204,7 +1204,7 @@ func (site *Site) loadpointHighPriority() bool {
 
 	// 1. check if battery is not below minSoc
 	for _, dev := range site.batteryMeters {
-		minSoc, err := site.batteryMinSocReached(dev)
+		minSoc, err := site.batterySocLimitReached(dev, true)
 		if err != nil && !errors.Is(err, api.ErrNotAvailable) {
 			continue
 		}
