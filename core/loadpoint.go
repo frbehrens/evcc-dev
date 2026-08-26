@@ -2281,6 +2281,12 @@ func (lp *Loadpoint) Update(sitePower, batteryPower float64, consumption, feedin
 		}
 	}
 
+	// Frank Behrens: for heating devices do not use battery
+	if lp.chargerHasFeature(api.Heating) {
+		batteryBuffered = false
+		batteryStart = false
+	}
+
 	// smart cost
 	smartCostActive, smartCostNextStart := lp.checkSmartLimit(lp.GetSmartCostLimit(), consumption, true)
 	lp.publish(keys.SmartCostActive, smartCostActive)
