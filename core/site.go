@@ -1168,7 +1168,7 @@ func (site *Site) sitePower(state siteState, totalChargePower, flexiblePower flo
 
 	if hasBattery {
 		// if battery is charging below prioritySoc give it priority
-		if state.battery.Soc < prioritySoc && batteryPower < 0 {
+		if state.battery.Soc < prioritySoc && batteryPower < 0 && !site.loadpointHighPriority() {
 			site.log.DEBUG.Printf("battery has priority at soc %.0f%% (< %.0f%%)", state.battery.Soc, prioritySoc)
 			priorityAdjustment += batteryPower + excessDCPower
 			batteryPower = 0
@@ -1197,6 +1197,31 @@ func (site *Site) sitePower(state siteState, totalChargePower, flexiblePower flo
 		batteryStart:       batteryStart,
 		priorityAdjustment: priorityAdjustment,
 	}
+}
+
+// determines if an active loadpoint plan should reduce battery priority
+func (site *Site) loadpointHighPriority() bool {
+
+	// 1. check if battery is not below minSoc
+	for _, dev := range site.batteryMeters {
+		minSoc, err := site.batteryMinSocReached(dev)
+		if err != nil && !errors.Is(err, api.ErrNotAvailable) {
+			continue
+		}
+		if minSoc {
+			site.log.DEBUG.Printf("battery soc below min soc, loadpoint plans will not reduce battery priority")
+			return false
+		}
+	}
+
+	// 2. check if any loadpoint has a plan with a higher soc than the current soc
+	for _, lp := range site.activeLoadpoints() {
+		if lp.connected() && !lp.LimitSocReached() && lp.EffectivePlanSoc() > int(lp.GetSoc()) {
+			site.log.DEBUG.Printf("loadpoint %s has active plan, reduce battery priority (soc %d%% > %d%%)", lp.GetTitle(), lp.EffectivePlanSoc(), int(lp.GetSoc()))
+			return true
+		}
+	}
+	return false
 }
 
 // updateLoadpoints updates all loadpoints' charge power
