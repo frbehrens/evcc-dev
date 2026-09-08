@@ -1217,7 +1217,7 @@ func (site *Site) loadpointHighPriority() bool {
 	// 2. check if any loadpoint has a plan with a higher soc than the current soc
 	for _, lp := range site.activeLoadpoints() {
 		if lp.connected() && !lp.LimitSocReached() && lp.EffectivePlanSoc() > int(lp.GetSoc()) {
-			site.log.DEBUG.Printf("loadpoint %s has active plan, reduce battery priority (soc %d%% > %d%%)", lp.GetTitle(), lp.EffectivePlanSoc(), int(lp.GetSoc()))
+			site.log.DEBUG.Printf("loadpoint %s has active plan, reduce battery priority (plan soc %d%% > current soc %d%%)", lp.GetTitle(), lp.EffectivePlanSoc(), int(lp.GetSoc()))
 			return true
 		}
 	}
