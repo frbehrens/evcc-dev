@@ -1847,6 +1847,8 @@ func (lp *Loadpoint) pvMaxCurrent(sitePower, batteryPower float64, batteryBuffer
 	// read only once to simplify testing
 	minCurrent := lp.effectiveMinCurrent()
 	maxCurrent := lp.effectiveMaxCurrent()
+	lp.log.DEBUG.Printf("effectiveMaxCurrent for pvMaxCurrent: maxCurrent=%.1fA, phases=%d, activePhases=%d", maxCurrent, lp.GetPhases(), lp.ActivePhases())
+
 	alwaysCharge := lp.GetAlwaysCharge().Active()
 
 	// always charge and the battery conditions hold charging at min current, no disable can follow
