@@ -2374,8 +2374,14 @@ func (lp *Loadpoint) Update(sitePower, batteryPower float64, consumption, feedin
 
 	// Frank Behrens: for heating devices do not use battery
 	if lp.chargerHasFeature(api.Heating) {
+		lp.log.DEBUG.Printf("heating: sitePower %g, batteryPower %g", sitePower, batteryPower)
 		batteryBuffered = false
 		batteryStart = false
+
+		if lp.site.GetBatterySoc() < 90 && lp.site.GetGridPower() > -300 {
+			lp.log.DEBUG.Printf("disable loadpoint %s because battery soc < 90%% and grid power %gW > -300W", lp.title, lp.site.GetGridPower())
+			sitePower = 5000
+		}
 	}
 
 	// smart cost
